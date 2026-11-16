@@ -1,0 +1,87 @@
+# Default configuration for the queue-aware market-making pipeline.
+# All quantities are in "instrument" units: price in quote currency, size in base units,
+# time in seconds.
+
+seed: 42
+
+instrument:
+  symbol: SYNTH-USDT
+  tick_size: 0.01         # 1 tick = 1 bp at mid 100: fee/spread economics resemble a liquid mid-cap pair
+  lot_size: 0.01
+  initial_mid: 100.0
+  n_levels: 10            # visible depth levels per side
+
+# ---------------------------------------------------------------------------
+# Hawkes order-flow model. Event types (in this order):
+#   0 MB  market buy       1 MS  market sell
+#   2 LB  limit buy add    3 LS  limit sell add
+#   4 CB  cancel buy       5 CS  cancel sell
+# Intensities are per second. Default parameters are chosen to be stationary
+# (spectral radius of alpha/beta < 1) and to produce realistic clustering:
+# market orders self-excite (momentum), market sells excite bid-side cancels
+# (liquidity withdrawal) and vice-versa -> this is the mechanism that creates
+# adverse selection for passive quotes.
+# ---------------------------------------------------------------------------
+hawkes:
+  mu:    [0.8, 0.8, 4.0, 4.0, 3.0, 3.0]
+  # alpha[i][j] = excitation of type i caused by an event of type j
+  alpha:
+    - [0.35, 0.05, 0.02, 0.02, 0.00, 0.00]   # MB excited by MB (self), MS little
+    - [0.05, 0.35, 0.02, 0.02, 0.00, 0.00]   # MS
+    - [0.10, 0.30, 0.20, 0.05, 0.10, 0.00]   # LB: replenish after MS hits bids
+    - [0.30, 0.10, 0.05, 0.20, 0.00, 0.10]   # LS
+    - [0.05, 0.40, 0.05, 0.00, 0.20, 0.05]   # CB: bid cancels after market sells
+    - [0.40, 0.05, 0.00, 0.05, 0.05, 0.20]   # CS: ask cancels after market buys
+  beta: 2.0               # kernel decay (1/s); shared across pairs
+
+# Order size / placement distributions for the synthetic book
+synthetic:
+  duration_s: 3600            # seconds of simulated time per run
+  market_size_mean: 8.0       # lognormal mean (base units)
+  market_size_sigma: 1.0
+  limit_size_mean: 5.0
+  limit_size_sigma: 0.8
+  limit_level_geom_p: 0.45    # P(level k) ~ geometric: k=0 is best
+  limit_improve_prob: 0.25    # P(place inside the spread | spread > 1 tick)
+  cancel_frac_mean: 0.5       # fraction of level size cancelled
+  initial_level_size: 50.0    # seed depth per level (base units)
+  depth_replenish_size: 50.0
+
+# ---------------------------------------------------------------------------
+# Market-maker economics
+# ---------------------------------------------------------------------------
+fees:
+  maker_bps: 0.2             # VIP / rebate-tier maker fee. Standard Binance tier is 1.0 bp: at a 1-bp tick
+  taker_bps: 2.0             # that would eat the full half-spread — try it in the dashboard.
+
+strategy:
+  quote_size: 1.0            # base units per side
+  max_inventory: 20.0        # hard inventory cap (base units)
+  horizon_s: 60.0            # AS pseudo-horizon T - t
+  gamma: 0.05                # AS risk aversion
+  kappa: 1.5                 # AS fill-intensity decay per tick (λ(δ) ∝ exp(-κ δ)); re-calibrated from probes
+  requote_interval_s: 0.25   # decision cadence
+  inventory_penalty: 0.00002 # quadratic inventory cost coefficient (quote ccy per unit^2 per s)
+  markout_horizons_s: [0.1, 0.5, 1.0, 5.0]
+  decision_horizon_s: 1.0    # τ used by the Bayesian quoter to value a quote
+  markout_horizon_s: 1.0     # h used to value a fill
+  bayes_thompson: true       # Thompson-sample the queue-depletion rate (exploration)
+
+# Fill-probability model (competing risks)
+fill_model:
+  horizons_s: [0.1, 0.5, 1.0]
+  n_probe_orders: 20000        # synthetic probe orders used to build the labelled dataset
+  max_wait_s: 10.0
+
+rl:
+  episodes: 60
+  episode_len_steps: 1200
+  gamma: 0.99
+  lr: 0.0005
+  batch_size: 256
+  buffer_size: 100000
+  epsilon_start: 1.0
+  epsilon_end: 0.05
+  epsilon_decay_steps: 30000
+  hidden: 128
+  target_update: 500
