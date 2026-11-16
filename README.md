@@ -49,9 +49,14 @@ python scripts/run_pipeline.py --rl --train-rl --plots --make-dashboard
 # 3. interactive dashboard (live re-runs as you move the sliders)
 streamlit run dashboard/streamlit_app.py
 
-# 4. static shareable dashboard
+# 4. static shareable dashboards (offline, self-contained)
 python scripts/make_dashboard.py --data results/run/dashboard_data.json --out results/run/dashboard.html
+python scripts/make_artifact.py  --data results/run/dashboard_data.json --out results/run/artifact_dashboard.html
 ```
+
+`make_dashboard.py` writes a standalone file you can open directly;
+`make_artifact.py` writes a claude.ai-artifact-ready page (publishable as a
+shareable Claude artifact).
 
 ### Using real Binance Level-2 data
 
