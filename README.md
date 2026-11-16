@@ -70,7 +70,8 @@ python scripts/download_binance.py BTCUSDT 2024-05-01 --window 0 3600 --save dat
 python scripts/run_pipeline.py --binance BTCUSDT 2024-05-01 --window 0 3600
 
 python scripts/run_pipeline.py --config config/default.yaml --out results/run --train-duration 1800 --test-duration 1800 --train-seed 1 --test-seed 2 --rl --train-rl --rl-episodes 60 --plots --make-dashboard
-
+React only comes into play when you run 
+python scripts/serve_dashboard.py and visit localhost:8000.
 ```
 
 `bookTicker` gives exact top-of-book size (queue) and `aggTrades` every trade —
