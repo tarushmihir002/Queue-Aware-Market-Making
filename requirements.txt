@@ -11,3 +11,5 @@ gymnasium>=0.29
 requests>=2.31
 pyyaml>=6.0
 pytest>=7.0
+fastapi>=0.110
+uvicorn[standard]>=0.29

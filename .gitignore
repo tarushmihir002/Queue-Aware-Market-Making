@@ -14,6 +14,11 @@ venv/
 data/
 results/agent.pt
 results/run/
+results/app_cache/
+
+# react frontend
+app/frontend/node_modules/
+app/frontend/dist/
 results/*.parquet
 results/*.npz
 results/*.pt

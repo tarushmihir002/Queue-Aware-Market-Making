@@ -46,7 +46,10 @@ python scripts/run_pipeline.py --plots
 # 2. include a trained RL agent in the comparison
 python scripts/run_pipeline.py --rl --train-rl --plots --make-dashboard
 
-# 3. interactive dashboard (live re-runs as you move the sliders)
+# 3a. React dashboard app on your own local server (FastAPI + React/Vite)
+python scripts/serve_dashboard.py        # builds the frontend, serves API+app at http://127.0.0.1:8000
+
+# 3b. interactive Streamlit dashboard (live re-runs as you move the sliders)
 streamlit run dashboard/streamlit_app.py
 
 # 4. static shareable dashboards (offline, self-contained)
@@ -74,6 +77,29 @@ a vendor feed (Tardis, crypto-lob-stream); drop it in via
 agnostic. NSE depth exports load the same way once renamed to the canonical
 columns (`ts, bid_px_1.., bid_sz_1.., ask_px_1.., ask_sz_1..`).
 
+## Local dashboard app (React + FastAPI)
+
+A self-hosted web app under `app/`. The FastAPI backend (`app/backend`) exposes the
+pipeline and serves the built React/Vite frontend (`app/frontend`), so one command
+hosts everything at `http://127.0.0.1:8000`:
+
+```bash
+pip install fastapi "uvicorn[standard]"          # backend deps (also in requirements.txt)
+python scripts/serve_dashboard.py                # npm install + build + serve
+```
+
+Move the sidebar controls (risk aversion γ, maker fee, market momentum/toxicity,
+quote size, sim length) and press **Run backtest**: the backend re-runs the full
+pipeline with those parameters and the dashboard redraws (strategies, fill model,
+adverse selection, objective). API: `GET /api/results`, `POST /api/run`,
+`GET /api/status|config|health`.
+
+For live frontend development:
+```bash
+uvicorn app.backend.main:app --port 8000         # terminal 1
+cd app/frontend && npm install && npm run dev     # terminal 2 (Vite @ :5173, proxies /api)
+```
+
 ## Architecture
 
 ```
@@ -96,7 +122,8 @@ qamm/
     metrics.py     performance & objective metrics
   report.py        one pipeline used by CLI, dashboard and tests
   plotting.py      paper figures
-scripts/   run_pipeline · download_binance · make_dashboard
+scripts/   run_pipeline · download_binance · make_dashboard · make_artifact · serve_dashboard
+app/       FastAPI backend (app/backend) + React/Vite frontend (app/frontend)
 dashboard/ streamlit_app.py
 tests/     pytest suite (queue mechanics, survival consistency, P&L identities, …)
 paper/     research_paper.md

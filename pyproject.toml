@@ -22,6 +22,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dashboard = ["streamlit>=1.30"]
+webapp = ["fastapi>=0.110", "uvicorn[standard]>=0.29"]
 rl = ["gymnasium>=0.29"]
 dev = ["pytest>=7.0"]
 
