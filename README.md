@@ -68,6 +68,9 @@ Public archive, no API key (https://data.binance.vision):
 ```bash
 python scripts/download_binance.py BTCUSDT 2024-05-01 --window 0 3600 --save data/btc_1h.npz
 python scripts/run_pipeline.py --binance BTCUSDT 2024-05-01 --window 0 3600
+
+python scripts/run_pipeline.py --config config/default.yaml --out results/run --train-duration 1800 --test-duration 1800 --train-seed 1 --test-seed 2 --rl --train-rl --rl-episodes 60 --plots --make-dashboard
+
 ```
 
 `bookTicker` gives exact top-of-book size (queue) and `aggTrades` every trade —
